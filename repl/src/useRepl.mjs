@@ -50,14 +50,25 @@ function useRepl({ tune, defaultSynth, autolink = true, onEvent, onDraw: onDrawP
           if (!onTrigger) {
             if (defaultSynth) {
               const note = getPlayableNoteValue(event);
-              defaultSynth.triggerAttackRelease(note, event.duration.valueOf(), time, velocity);
+              var duration = event.duration.valueOf();
+              if ('legato' in event.value) {
+                duration *= event['legato'];
+              }
+              defaultSynth.triggerAttackRelease(note, duration, time, velocity);
             } else {
               throw new Error('no defaultSynth passed to useRepl.');
             }
             /* console.warn('no instrument chosen', event);
           throw new Error(`no instrument chosen for ${JSON.stringify(event)}`); */
           } else {
-            onTrigger(time, event, currentTime);
+            onTrigger(
+              time,
+              event,
+              currentTime,
+              1 /* cps */,
+              event.wholeOrPart().begin.valueOf(),
+              event.duration.valueOf(),
+            );
           }
         } catch (err) {
           console.warn(err);

@@ -13,10 +13,11 @@ const latency = 0.1;
 
 Pattern.prototype.osc = function () {
   return this._withHap((hap) => {
-    const onTrigger = (time, hap, currentTime) => {
+    const onTrigger = (time, hap, currentTime, cps, cycle, delta) => {
       // time should be audio time of onset
       // currentTime should be current time of audio context (slightly before time)
-      const keyvals = Object.entries(hap.value).flat();
+      const controls = Object.assign({}, { cps: cps, cycle: cycle, delta: delta }, hap.value);
+      const keyvals = Object.entries(controls).flat();
       const offset = (time - currentTime + latency) * 1000;
       const ts = Math.floor(Date.now() + offset);
       const message = new OSC.Message('/dirt/play', ...keyvals);

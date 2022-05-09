@@ -951,11 +951,6 @@ export class Pattern {
     return this.withHapSpan((span) => new TimeSpan(span.begin, span.begin.add(value)));
   }
 
-  // sets hap relative duration of haps
-  _legato(value) {
-    return this.withHapSpan((span) => new TimeSpan(span.begin, span.begin.add(span.end.sub(span.begin).mul(value))));
-  }
-
   _velocity(velocity) {
     return this._withContext((context) => ({ ...context, velocity: (context.velocity || 1) * velocity }));
   }
@@ -1073,7 +1068,6 @@ Pattern.prototype.patternified = [
   'fast',
   'jux',
   'late',
-  'legato',
   'linger',
   'ply',
   'segment',
