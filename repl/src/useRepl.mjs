@@ -51,7 +51,7 @@ function useRepl({ tune, defaultSynth, autolink = true, onEvent, onDraw: onDrawP
             if (defaultSynth) {
               const note = getPlayableNoteValue(event);
               var duration = event.duration.valueOf();
-              if ('legato' in event.value) {
+              if (event.value instanceof Object && 'legato' in event.value) {
                 duration *= event['legato'];
               }
               defaultSynth.triggerAttackRelease(note, duration, time, velocity);
