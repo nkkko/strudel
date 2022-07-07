@@ -152,6 +152,14 @@ describe('Pattern', function () {
       );
     });
   });
+
+  it('Supports zero-width queries', function () {
+    assert.equal(slowcat('hello', silence).query(st(0.5, 0.5)).length, 1);
+    assert.equal(slowcat('hello', silence).query(st(0, 0)).length, 1);
+    assert.equal(slowcat('hello', silence).query(st(1, 1)).length, 0);
+    assert.equal(slowcat('hello', silence).query(st(1.5, 1.5)).length, 0);
+  });
+
   describe('add()', function () {
     it('can structure In()', function () {
       assert.equal(pure(3).add(pure(4)).query(st(0, 1))[0].value, 7);
