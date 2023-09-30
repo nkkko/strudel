@@ -72,11 +72,15 @@ We do this by breaking our steps down into mini patterns using `[]`
 
 <MiniRepl client:visible tune={`sound("bd sd bd hh")`} dirt />
 
-<MiniRepl client:visible tune={`sound("bd sd [bd cp] [hh oh/2]")`} dirt />
+<MiniRepl client:visible tune={`sound("bd sd [bd cp] [hh oh]")`} dirt />
+
+Let's have a look at how that looks visually:
+
+<MiniRepl client:visible tune={`sound("bd sd [bd cp] [hh oh]")`} dirt punchcard />
 
 You can nest sequences within sequences for dense patterns
 
-<MiniRepl client:visible tune={`sound("[[bd [bd bd bd bd]] bd sd] [bd cp]")`} dirt />
+<MiniRepl client:visible tune={`sound("[[bd [bd bd bd bd]] bd sd] [bd cp]")`} dirt punchcard />
 
 We can also schedule events across multiple cycles using `<>`
 
@@ -230,7 +234,7 @@ Or we can do something similar with `sometimes` which will apply a transformatio
 
 `Iter` starts the pattern at a different point each cycle, giving us a rotational pattern:
 
-<MiniRepl client:visible tune={`n("1 2 3 4").sound("numbers").iter(4).slow(4)`} dirt />
+<MiniRepl client:visible tune={`n("1 2 3 4").sound("numbers").iter(4).slow(2)`} dirt punchcard />
 
 This can lead to some nice variation across time:
 
@@ -262,10 +266,11 @@ We can use `stack` or `[,]` to create polyrhythmic structures - in this case pat
   note("0 2 4").sound("casio")
   )`} dirt />
 
-<MiniRepl client:visible tune={`sound("[bd sn hh, ~ cp ~ cp]")`} dirt />
+<MiniRepl client:visible tune={`sound("[bd bd bd, cp cp]")`} dirt punchcard />
 
 We can use `{,}` to create polymetrical structures - the elements of the pattern _after_ the comma will follow the same pulse as those _before_ the comma
 This can give us a sense of rotation over time.
+
 <MiniRepl client:visible tune={`sound("{hh cp hh cp, bd sd ~ ~ bd}")`} dirt />
 
 ### Euclidian rhythm
