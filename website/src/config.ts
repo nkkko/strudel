@@ -63,6 +63,7 @@ export const SIDEBAR: Sidebar = {
       { text: 'Recap', link: 'workshop/recap' },
       { text: 'Workshop in German', link: 'de/workshop/getting-started' },
       { text: 'Bournemouth workshop', link: 'workshop/bournemouth' },
+      { text: 'Ljubljana patterns', link: 'workshop/ljubljana' },
     ],
     'Making Sound': [
       { text: 'Samples', link: 'learn/samples' },
