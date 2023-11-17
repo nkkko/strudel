@@ -57,13 +57,13 @@ export const getSampleBufferSource = async (s, n, note, speed, freq, bank, resol
   const bufferSource = ac.createBufferSource();
   bufferSource.buffer = buffer;
   const playbackRate = 1.0 * Math.pow(2, transpose / 12);
-  // bufferSource.playbackRate.value = Math.pow(2, transpose / 12);
   bufferSource.playbackRate.value = playbackRate;
   return bufferSource;
 };
 
 export const loadBuffer = (url, ac, s, n = 0) => {
   const label = s ? `sound "${s}:${n}"` : 'sample';
+  url = url.replace('#', '%23');
   if (!loadCache[url]) {
     logger(`[sampler] load ${label}..`, 'load-sample', { url });
     const timestamp = Date.now();
@@ -146,7 +146,12 @@ function getSamplesPrefixHandler(url) {
  *  sd: '808sd/SD0010.WAV'
  *  }, 'https://raw.githubusercontent.com/tidalcycles/Dirt-Samples/master/');
  * s("[bd ~]*2, [~ hh]*2, ~ sd")
- *
+ * @example
+ * samples('shabda:noise,chimp:2')
+ * s("noise <chimp:0*2 chimp:1>")
+ * @example
+ * samples('shabda/speech/fr-FR/f:chocolat')
+ * s("chocolat*4")
  */
 
 export const samples = async (sampleMap, baseUrl = sampleMap._base || '', options = {}) => {
@@ -156,10 +161,33 @@ export const samples = async (sampleMap, baseUrl = sampleMap._base || '', option
     if (handler) {
       return handler(sampleMap);
     }
+    if (sampleMap.startsWith('bubo:')) {
+      const [_, repo] = sampleMap.split(':');
+      sampleMap = `github:Bubobubobubobubo/dough-${repo}`;
+    }
     if (sampleMap.startsWith('github:')) {
       let [_, path] = sampleMap.split('github:');
       path = path.endsWith('/') ? path.slice(0, -1) : path;
+      if (path.split('/').length === 2) {
+        // assume main as default branch if none set
+        path += '/main';
+      }
       sampleMap = `https://raw.githubusercontent.com/${path}/strudel.json`;
+    }
+    if (sampleMap.startsWith('shabda:')) {
+      let [_, path] = sampleMap.split('shabda:');
+      sampleMap = `https://shabda.ndre.gr/${path}.json?strudel=1`;
+    }
+    if (sampleMap.startsWith('shabda/speech')) {
+      let [_, path] = sampleMap.split('shabda/speech');
+      path = path.startsWith('/') ? path.substring(1) : path;
+      let [params, words] = path.split(':');
+      let gender = 'f';
+      let language = 'en-GB';
+      if (params) {
+        [language, gender] = params.split('/');
+      }
+      sampleMap = `https://shabda.ndre.gr/speech/${words}.json?gender=${gender}&language=${language}&strudel=1'`;
     }
     if (typeof fetch !== 'function') {
       // not a browser
@@ -211,6 +239,8 @@ export async function onTriggerSample(t, value, onended, bank, resolveUrl) {
     begin = 0,
     loopEnd = 1,
     end = 1,
+    vib,
+    vibmod = 0.5,
   } = value;
   // load sample
   if (speed === 0) {
@@ -225,6 +255,19 @@ export async function onTriggerSample(t, value, onended, bank, resolveUrl) {
   const time = t + nudge;
 
   const bufferSource = await getSampleBufferSource(s, n, note, speed, freq, bank, resolveUrl);
+
+  // vibrato
+  let vibratoOscillator;
+  if (vib > 0) {
+    vibratoOscillator = getAudioContext().createOscillator();
+    vibratoOscillator.frequency.value = vib;
+    const gain = getAudioContext().createGain();
+    // Vibmod is the amount of vibrato, in semitones
+    gain.gain.value = vibmod * 100;
+    vibratoOscillator.connect(gain);
+    gain.connect(bufferSource.detune);
+    vibratoOscillator.start(0);
+  }
 
   // asny stuff above took too long?
   if (ac.currentTime > t) {
@@ -257,6 +300,7 @@ export async function onTriggerSample(t, value, onended, bank, resolveUrl) {
   envelope.connect(out);
   bufferSource.onended = function () {
     bufferSource.disconnect();
+    vibratoOscillator?.stop();
     envelope.disconnect();
     out.disconnect();
     onended();
