@@ -1,7 +1,7 @@
 # superdough
 
 superdough is a simple web audio sampler and synth, intended for live coding.
-It is the default output of [strudel](https://strudel.tidalcycles.org/).
+It is the default output of [strudel](https://strudel.cc/).
 This package has no ties to strudel and can be used to quickly bake your own music system on the web.
 
 ## Install
@@ -67,6 +67,10 @@ superdough({ s: 'bd', delay: 0.5 }, 0, 1);
   - `crush`: amplitude bit crusher using given number of bits
   - `shape`: distortion effect from 0 (none) to 1 (full). might get loud!
   - `pan`: stereo panning from 0 (left) to 1 (right)
+  - `phaser`: sets the speed of the modulation
+  - `phaserdepth`: the amount the signal is affected by the phaser effect.
+  - `phasersweep`: the frequency sweep range of the lfo for the phaser effect.
+  - `phasercenter`: the amount the signal is affected by the phaser effect.
   - `vowel`: vowel filter. possible values: "a", "e", "i", "o", "u"
   - `delay`: delay mix
   - `delayfeedback`: delay feedback

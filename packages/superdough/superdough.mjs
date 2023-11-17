@@ -9,17 +9,21 @@ import './reverb.mjs';
 import './vowel.mjs';
 import { clamp } from './util.mjs';
 import workletsUrl from './worklets.mjs?url';
-import { createFilter, gainNode } from './helpers.mjs';
+import { createFilter, gainNode, getCompressor } from './helpers.mjs';
 import { map } from 'nanostores';
 import { logger } from './logger.mjs';
+import { loadBuffer } from './sampler.mjs';
 
 export const soundMap = map();
+
 export function registerSound(key, onTrigger, data = {}) {
   soundMap.setKey(key, { onTrigger, data });
 }
+
 export function getSound(s) {
   return soundMap.get()[s];
 }
+
 export const resetLoadedSounds = () => soundMap.set({});
 
 let audioContext;
@@ -46,6 +50,7 @@ export const panic = () => {
 };
 
 let workletsLoading;
+
 function loadWorklets() {
   if (workletsLoading) {
     return workletsLoading;
@@ -89,6 +94,7 @@ export async function initAudioOnFirstClick(options) {
 
 let delays = {};
 const maxfeedback = 0.98;
+
 function getDelay(orbit, delaytime, delayfeedback, t) {
   if (delayfeedback > maxfeedback) {
     //logger(`delayfeedback was clamped to ${maxfeedback} to save your ears`);
@@ -106,22 +112,79 @@ function getDelay(orbit, delaytime, delayfeedback, t) {
   return delays[orbit];
 }
 
+// each orbit will have its own lfo
+const phaserLFOs = {};
+function getPhaser(orbit, t, speed = 1, depth = 0.5, centerFrequency = 1000, sweep = 2000) {
+  //gain
+  const ac = getAudioContext();
+  const lfoGain = ac.createGain();
+  lfoGain.gain.value = sweep;
+
+  //LFO
+  if (phaserLFOs[orbit] == null) {
+    phaserLFOs[orbit] = ac.createOscillator();
+    phaserLFOs[orbit].frequency.value = speed;
+    phaserLFOs[orbit].type = 'sine';
+    phaserLFOs[orbit].start();
+  }
+
+  phaserLFOs[orbit].connect(lfoGain);
+  if (phaserLFOs[orbit].frequency.value != speed) {
+    phaserLFOs[orbit].frequency.setValueAtTime(speed, t);
+  }
+
+  //filters
+  const numStages = 2; //num of filters in series
+  let fOffset = 0;
+  const filterChain = [];
+  for (let i = 0; i < numStages; i++) {
+    const filter = ac.createBiquadFilter();
+    filter.type = 'notch';
+    filter.gain.value = 1;
+    filter.frequency.value = centerFrequency + fOffset;
+    filter.Q.value = 2 - Math.min(Math.max(depth * 2, 0), 1.9);
+
+    lfoGain.connect(filter.detune);
+    fOffset += 282;
+    if (i > 0) {
+      filterChain[i - 1].connect(filter);
+    }
+    filterChain.push(filter);
+  }
+  return filterChain[filterChain.length - 1];
+}
+
 let reverbs = {};
-function getReverb(orbit, duration = 2) {
+
+let hasChanged = (now, before) => now !== undefined && now !== before;
+
+function getReverb(orbit, duration, fade, lp, dim, ir) {
+  // If no reverb has been created for a given orbit, create one
   if (!reverbs[orbit]) {
     const ac = getAudioContext();
-    const reverb = ac.createReverb(duration);
+    const reverb = ac.createReverb(duration, fade, lp, dim, ir);
     reverb.connect(getDestination());
     reverbs[orbit] = reverb;
   }
-  if (reverbs[orbit].duration !== duration) {
-    reverbs[orbit] = reverbs[orbit].setDuration(duration);
-    reverbs[orbit].duration = duration;
+  if (
+    hasChanged(duration, reverbs[orbit].duration) ||
+    hasChanged(fade, reverbs[orbit].fade) ||
+    hasChanged(lp, reverbs[orbit].lp) ||
+    hasChanged(dim, reverbs[orbit].dim) ||
+    reverbs[orbit].ir !== ir
+  ) {
+    // only regenerate when something has changed
+    // avoids endless regeneration on things like
+    // stack(s("a"), s("b").rsize(8)).room(.5)
+    // this only works when args may stay undefined until here
+    // setting default values breaks this
+    reverbs[orbit].generate(duration, fade, lp, dim, ir);
   }
   return reverbs[orbit];
 }
 
 export let analyser, analyserData /* s = {} */;
+
 export function getAnalyser(/* orbit,  */ fftSize = 2048) {
   if (!analyser /*s [orbit] */) {
     const analyserNode = getAudioContext().createAnalyser();
@@ -177,6 +240,7 @@ export const superdough = async (value, deadline, hapDuration) => {
     bank,
     source,
     gain = 0.8,
+    postgain = 1,
     // filters
     ftype = '12db',
     fanchor = 0.5,
@@ -204,6 +268,12 @@ export const superdough = async (value, deadline, hapDuration) => {
     bpsustain = 1,
     bprelease = 0.01,
     bandq = 1,
+
+    //phaser
+    phaser,
+    phaserdepth = 0.75,
+    phasersweep,
+    phasercenter,
     //
     coarse,
     crush,
@@ -215,10 +285,20 @@ export const superdough = async (value, deadline, hapDuration) => {
     delaytime = 0.25,
     orbit = 1,
     room,
-    size = 2,
+    roomfade,
+    roomlp,
+    roomdim,
+    roomsize,
+    ir,
+    i = 0,
     velocity = 1,
     analyze, // analyser wet
     fft = 8, // fftSize 0 - 10
+    compressor: compressorThreshold,
+    compressorRatio,
+    compressorKnee,
+    compressorAttack,
+    compressorRelease,
   } = value;
   gain *= velocity; // legacy fix for velocity
   let toDisconnect = []; // audio nodes that will be disconnected when the source has ended
@@ -228,6 +308,7 @@ export const superdough = async (value, deadline, hapDuration) => {
   if (bank && s) {
     s = `${bank}_${s}`;
   }
+
   // get source AudioNode
   let sourceNode;
   if (source) {
@@ -247,6 +328,7 @@ export const superdough = async (value, deadline, hapDuration) => {
     // this can be used for things like speed(0) in the sampler
     return;
   }
+
   if (ac.currentTime > t) {
     logger('[webaudio] skip hap: still loading', ac.currentTime - t);
     return;
@@ -333,15 +415,25 @@ export const superdough = async (value, deadline, hapDuration) => {
   crush !== undefined && chain.push(getWorklet(ac, 'crush-processor', { crush }));
   shape !== undefined && chain.push(getWorklet(ac, 'shape-processor', { shape }));
 
+  compressorThreshold !== undefined &&
+    chain.push(
+      getCompressor(ac, compressorThreshold, compressorRatio, compressorKnee, compressorAttack, compressorRelease),
+    );
+
   // panning
   if (pan !== undefined) {
     const panner = ac.createStereoPanner();
     panner.pan.value = 2 * pan - 1;
     chain.push(panner);
   }
+  // phaser
+  if (phaser !== undefined && phaserdepth > 0) {
+    const phaserFX = getPhaser(orbit, t, phaser, phaserdepth, phasercenter, phasersweep);
+    chain.push(phaserFX);
+  }
 
   // last gain
-  const post = gainNode(1);
+  const post = gainNode(postgain);
   chain.push(post);
   post.connect(getDestination());
 
@@ -353,8 +445,19 @@ export const superdough = async (value, deadline, hapDuration) => {
   }
   // reverb
   let reverbSend;
-  if (room > 0 && size > 0) {
-    const reverbNode = getReverb(orbit, size);
+  if (room > 0) {
+    let roomIR;
+    if (ir !== undefined) {
+      let url;
+      let sample = getSound(ir);
+      if (Array.isArray(sample)) {
+        url = sample.data.samples[i % sample.data.samples.length];
+      } else if (typeof sample === 'object') {
+        url = Object.values(sample.data.samples).flat()[i % Object.values(sample.data.samples).length];
+      }
+      roomIR = await loadBuffer(url, ac, ir, 0);
+    }
+    const reverbNode = getReverb(orbit, roomsize, roomfade, roomlp, roomdim, roomIR);
     reverbSend = effectSend(post, reverbNode, room);
   }
 

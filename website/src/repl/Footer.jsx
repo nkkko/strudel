@@ -384,7 +384,9 @@ function SettingsTab({ scheduler }) {
     theme,
     keybindings,
     isLineNumbersDisplayed,
+    isActiveLineHighlighted,
     isAutoCompletionEnabled,
+    isTooltipEnabled,
     isLineWrappingEnabled,
     fontSize,
     fontFamily,
@@ -436,7 +438,7 @@ function SettingsTab({ scheduler }) {
         <ButtonGroup
           value={keybindings}
           onChange={(keybindings) => settingsMap.setKey('keybindings', keybindings)}
-          items={{ codemirror: 'Codemirror', vim: 'Vim', emacs: 'Emacs' }}
+          items={{ codemirror: 'Codemirror', vim: 'Vim', emacs: 'Emacs', vscode: 'VSCode' }}
         ></ButtonGroup>
       </FormItem>
       <FormItem label="Panel Position">
@@ -453,9 +455,19 @@ function SettingsTab({ scheduler }) {
           value={isLineNumbersDisplayed}
         />
         <Checkbox
+          label="Highlight active line"
+          onChange={(cbEvent) => settingsMap.setKey('isActiveLineHighlighted', cbEvent.target.checked)}
+          value={isActiveLineHighlighted}
+        />
+        <Checkbox
           label="Enable auto-completion"
           onChange={(cbEvent) => settingsMap.setKey('isAutoCompletionEnabled', cbEvent.target.checked)}
           value={isAutoCompletionEnabled}
+        />
+        <Checkbox
+          label="Enable tooltips on Ctrl and hover"
+          onChange={(cbEvent) => settingsMap.setKey('isTooltipEnabled', cbEvent.target.checked)}
+          value={isTooltipEnabled}
         />
         <Checkbox
           label="Enable line wrapping"

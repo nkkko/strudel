@@ -20,6 +20,7 @@ if (typeof window !== 'undefined') {
     import('@strudel.cycles/osc'),
     import('@strudel.cycles/csound'),
     import('@strudel.cycles/soundfonts'),
+    import('@strudel/hydra'),
   );
 }
 
@@ -40,7 +41,7 @@ export function MiniRepl({
   claviatureLabels,
 }) {
   const [Repl, setRepl] = useState();
-  const { theme, keybindings, fontSize, fontFamily, isLineNumbersDisplayed } = useSettings();
+  const { theme, keybindings, fontSize, fontFamily, isLineNumbersDisplayed, isActiveLineHighlighted } = useSettings();
   const [activeNotes, setActiveNotes] = useState([]);
   useEffect(() => {
     // we have to load this package on the client
@@ -50,7 +51,7 @@ export function MiniRepl({
       .catch((err) => console.error(err));
   }, []);
   return Repl ? (
-    <div className="mb-4">
+    <div className="mb-4 mini-repl">
       <Repl
         tune={tune}
         hideOutsideView={true}
@@ -65,6 +66,7 @@ export function MiniRepl({
         fontFamily={fontFamily}
         fontSize={fontSize}
         isLineNumbersDisplayed={isLineNumbersDisplayed}
+        isActiveLineHighlighted={isActiveLineHighlighted}
         onPaint={
           claviature
             ? (ctx, time, haps, drawTime) => {
