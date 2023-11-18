@@ -9,6 +9,8 @@ import QA from '@components/QA';
 
 ## Algorithmic pattern ideas
 
+This is a straight copy of the main https://strudel.cc website, but with this extra worksheet for you.
+
 ### Repetition
 
 **We love repetition**
@@ -19,82 +21,87 @@ import QA from '@components/QA';
 
 **We love disrupting repetition**
 
-<MiniRepl client:visible tune={`
-note("c3 eb3 g3 as3").sound("sawtooth")
+<MiniRepl client:visible tune={`note("c3 eb3 g3 as3").sound("sawtooth")
   .lpf("2000")
-  .every(4, fast(2))
-`} dirt punchcard />
+  .every(4, fast(2))`} dirt punchcard />
 
 **We love disrupting repetition at random**
 
-<MiniRepl client:visible tune={`
-note("c3 eb3 g3 as3").sound("sawtooth")
+<MiniRepl client:visible tune={`note("c3 eb3 g3 as3").sound("sawtooth")
   .lpf("2000")
-  .every(4, fast(2)).rarely(hurry(2))
-`} dirt punchcard />
+  .every(4, fast(2)).rarely(hurry(2))`} dirt punchcard />
+
+**We love repeating sounds**
+
+<MiniRepl client:visible tune={`s("bd sd [~ bd] [sd mt]")
+  .bank("RolandTR909")
+  .lastOf(3, ply(2))
+  .slow(1.5)`} dirt />
+
+<MiniRepl client:visible tune={`await samples('github:yaxu/clean-breaks/main')
+s("think")
+  .splice(8, "[0 1 2 3 4 5 6 7]/2".every(3, ply(2)))
+`} dirt />
 
 ### Symmetry
 
-<MiniRepl client:visible tune={`
-note( "c3 eb3 g3 <as3 c4>").sound("triangle")
-  .palindrome()
-  .hpf("<4000 2000 1000 500 200 100>")
-`} dirt punchcard />
+**Mirroring**
 
-<MiniRepl client:visible tune={`
-"c3 eb3 g3 <as3 c4>".note()
+<MiniRepl client:visible tune={`note( "c3 eb3 g3 <as3 c4>").sound("triangle")
+  .palindrome()
+  .hpf("<4000 2000 1000 500 200 100>")`} dirt punchcard />
+
+<MiniRepl client:visible tune={`"c3 eb3 g3 <as3 c4>".note()
   .sometimes(rev())
-  .hpf("<4000 2000 1000 500 200 100>")
-`} dirt punchcard />
+  .hpf("<4000 2000 1000 500 200 100>")`} dirt punchcard />
 
 **Rotation is also a form of symmetry**
 
-This rotates the pattern by a quarter each cycle:
+This rotates the pattern by a quarter, each cycle:
 
-<MiniRepl client:visible tune={`
-await samples('github:yaxu/clean-breaks/main')
+<MiniRepl client:visible tune={`await samples('github:yaxu/clean-breaks/main')
 s("think")
   .splice(16, "0 1 2 3 4 5 6 7"
           .iter(4)
-         )
-`} dirt />
+         )`} dirt />
 
 ### Interference
+
+**Polymeter**
+
+<MiniRepl client:visible tune={`s("{bd [bd sd] [bd lt] ~, cb ~ ~}%4")
+  .bank("ViscoSpaceDrum")
+  .room(0.4)`} dirt />
+
+**Backwards and forwards, while rotating..**
 
 <MiniRepl client:visible tune={`
 s("bd [bd sd] [bd lt] cb").bank("ViscoSpaceDrum")
   .iter(4)
-  .jux(x => x.speed(2).rev())
-`} dirt />
+  .jux(x => x.speed(2).rev())`} dirt />
 
-<MiniRepl client:visible tune={`
-note("<c3(3,8) c4(3,16) d3(5,16) e4(5,16,2)>")
+### Offset
+
+**Rotated transformations**
+
+<MiniRepl client:visible tune={` "c3 eb3 g3 <as3 c4>".off(1/8, x=>x.add(12)).note()
+   .sound("sawtooth")
+  .cutoff(sine.range(500,2000).slow(4))`} dirt punchcard />
+
+<MiniRepl client:visible tune={`note("<c3(3,8) c4(3,16) d3(5,16) e4(5,16,2)>")
   .off("0.125", add(note(12)))
   .off("0.25", add(note("<-7 5 12>")))
   .slow(2)
   .jux(rev)
   .s("gm_voice_oohs")
-  .clip(1).room(1).sz(1)
-`} dirt />
-
-### Offset
-
-<MiniRepl client:visible tune={`
- "c3 eb3 g3 <as3 c4>".off(1/8, x=>x.add(12)).note()
-   .sound("sawtooth")
-  .cutoff(sine.range(500,2000).slow(4))
-`} dirt punchcard />
+  .clip(1).room(1).sz(1)`} dirt />
 
 ### Layer
 
-<MiniRepl client:visible tune={`
-note("~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f5] f5 [gs5 as5] [~ gs5] [g5 [gs5 gs5]]")
+<MiniRepl client:visible tune={`note("~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f5] f5 [gs5 as5] [~ gs5] [g5 [gs5 gs5]]")
   .slow(4)
-  .sound("piano").cutoff(sine.range(500,2000).slow(4))
-`} dirt punchcard />
+  .sound("piano").cutoff(sine.range(500,2000).slow(4))`} dirt punchcard />
 
-<MiniRepl client:visible tune={`
-"~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f5] f5 [gs5 as5] [~ gs5] [g5 [gs5 gs5]]"
+<MiniRepl client:visible tune={`"~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f5] f5 [gs5 as5] [~ gs5] [g5 [gs5 gs5]]"
 .layer(x=>x.add("0,12,7,-12,-24")).note().slow(4)
-.sound("piano")
-`} dirt />
+.sound("piano")`} dirt />
