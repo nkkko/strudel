@@ -90,6 +90,7 @@ export function repl({
     return silence;
   };
 
+  try {
   for (let i = 1; i < 10; ++i) {
     Object.defineProperty(Pattern.prototype, `d${i}`, {
       get() {
@@ -103,6 +104,7 @@ export function repl({
     });
     Pattern.prototype[`q${i}`] = silence;
   }
+  } catch (err) {}
 
   const fit = register('fit', (pat) =>
     pat.withHap((hap) =>

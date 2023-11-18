@@ -77,7 +77,6 @@ note("<c3(3,8) c4(3,16) d3(5,16) e4(5,16,2)>")
   .clip(1).room(1).sz(1)
 `} dirt />
 
-
 ### Offset
 
 <MiniRepl client:visible tune={`
@@ -93,6 +92,7 @@ note("~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f
   .slow(4)
   .sound("piano").cutoff(sine.range(500,2000).slow(4))
 `} dirt punchcard />
+
 <MiniRepl client:visible tune={`
 "~ [~ gs5] [gs5 g5] [g5 f5] f5 f5 g5 [g5 g5] [~ gs5] [~ gs5] [gs5 g5] [g5 f5] f5 [gs5 as5] [~ gs5] [g5 [gs5 gs5]]"
 .layer(x=>x.add("0,12,7,-12,-24")).note().slow(4)
