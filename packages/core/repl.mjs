@@ -151,11 +151,15 @@ export function repl({
       await beforeEval?.({ code });
       shouldHush && hush();
       let { pattern, meta } = await _evaluate(code, transpiler, transpilerOptions);
+
+      if (allTransform) {
+        for (const [key, value] of Object.entries(pPatterns)) {
+          pPatterns[key] = allTransform(value);
+        }
+      }
+
       if (Object.keys(pPatterns).length) {
         pattern = stack(...Object.values(pPatterns));
-      }
-      if (allTransform) {
-        pattern = allTransform(pattern);
       }
       if (!isPattern(pattern)) {
         const message = `got "${typeof evaluated}" instead of pattern`;
